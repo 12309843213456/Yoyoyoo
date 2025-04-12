@@ -1,0 +1,1713 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analizador Pro Mejorado</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+        --color-primario: #4361ee;
+        --color-secundario: #3a0ca3;
+        --color-fondo: #ADD8E6;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        background: var(--color-fondo);
+        padding: 15px;
+        margin: 0;
+        position: relative;
+    }
+
+    .boton-flotante {
+        position: fixed;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--color-primario);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 15px 10px;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        cursor: pointer;
+        z-index: 1000;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        transition: all 0.3s;
+    }
+
+    .boton-flotante:hover {
+        background: var(--color-secundario);
+        transform: translateY(-50%) scale(1.05);
+    }
+
+    .botonera-principal, .botonera-secundaria {
+        display: flex;
+        gap: 5px;
+        margin-bottom: 15px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+    }
+
+    .botonera-principal button, .botonera-secundaria button {
+        flex: 1;
+        min-width: 120px;
+        max-width: 200px;
+    }
+
+    .botonera-principal button {
+        background: var(--color-primario);
+        color: white;
+    }
+
+    .botonera-secundaria button {
+        background: var(--color-secundario);
+        color: white;
+        opacity: 0.7;
+    }
+
+    .botonera-secundaria button.activo {
+        opacity: 1;
+    }
+
+    button {
+        padding: 12px;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .tab {
+        display: none;
+    }
+
+    .tab.activo {
+        display: block;
+    }
+
+    .subtab {
+        display: none;
+    }
+
+    .subtab.activo {
+        display: block;
+    }
+
+    textarea, input {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        box-sizing: border-box;
+    }
+
+    textarea {
+        height: 150px;
+    }
+
+    .resultado {
+        background: white;
+        padding: 15px;
+        margin-top: 15px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .grafica-container {
+        width: 100%;
+        height: 300px;
+        margin: 20px 0;
+    }
+
+    .controles-avanzados {
+        background: white;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .grupo-controles {
+        display: flex;
+        gap: 10px;
+        margin: 10px 0;
+        align-items: center;
+    }
+
+    .grupo-controles input[type="number"] {
+        width: 80px;
+    }
+
+    .boton-generico {
+        background: #4CAF50;
+        color: white;
+        margin: 5px 0;
+    }
+
+    .patrones-encontrados {
+        background: white;
+        padding: 15px;
+        margin-top: 15px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .config-tiempo {
+      background: white;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .visual-vertical {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        position: absolute;
+        right: -40px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--color-primario);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 15px 10px;
+        cursor: pointer;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        transition: all 0.3s;
+    }
+    
+    .visual-vertical:hover {
+        background: var(--color-secundario);
+    }
+    
+    .contenedor-resultado {
+        position: relative;
+    }
+
+    @media (max-width: 768px) {
+        .botonera-principal, .botonera-secundaria {
+            flex-direction: column;
+        }
+        .boton-flotante {
+            right: 10px;
+            padding: 10px 5px;
+            font-size: 14px;
+        }
+        .grupo-controles {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+    
+    /* Estilos para patrones geométricos */
+    .tabla-geometricos {
+        margin-top: 15px;
+        width: 100%;
+    }
+
+    .tabla-resultados {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+        margin-bottom: 15px;
+        background-color: white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .tabla-resultados th, .tabla-resultados td {
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+    }
+
+    .tabla-resultados th {
+        background-color: var(--color-primario);
+        color: white;
+        font-weight: bold;
+    }
+
+    .celda-forma {
+        font-size: 24px;
+        text-align: center;
+        width: 15%;
+    }
+
+    .celda-cantidad {
+        text-align: center;
+        width: 15%;
+        font-weight: bold;
+    }
+
+    .celda-visual {
+        width: 70%;
+    }
+
+    .barra-visual {
+        height: 20px;
+        background-color: var(--color-primario);
+        border-radius: 3px;
+        transition: width 0.5s ease-in-out;
+    }
+  </style>
+</head>
+<body>
+
+<button class="boton-flotante" onclick="accionBotonFlotante()">MENÚ RÁPIDO</button>
+
+<!-- Botonera Principal -->
+<div class="botonera-principal">
+  <button onclick="mostrarTab('contador')">Contador</button>
+  <button onclick="mostrarTab('patrones')">Patrones</button>
+  <button onclick="mostrarTab('grafica')">Gráfica</button>
+  <button onclick="mostrarTab('linea-tiempo')">Línea de Tiempo</button>
+  <button onclick="autoguardar()">Autoguardado</button>
+</div>
+
+<!-- Contador de Cambios -->
+<div id="contador" class="tab">
+  <h2>Contador de Cambios</h2>
+  <textarea id="input-contador" placeholder="Pega tu secuencia numérica..."></textarea>
+  <button onclick="contarCambios()">Calcular Cambios</button>
+  <div id="resultado-contador" class="resultado"></div>
+</div>
+
+<!-- Buscador de Patrones -->
+<div id="patrones" class="tab">
+  <div class="botonera-secundaria">
+    <button onclick="mostrarSubTab(event, 'busqueda-simple')" class="activo">Búsqueda Simple</button>
+    <button onclick="mostrarSubTab(event, 'patrones-complejos')">Patrones Complejos</button>
+    <button onclick="mostrarSubTab(event, 'patrones-disonantes')">Patrones Disonantes</button>
+    <button onclick="mostrarSubTab(event, 'patrones-geometricos')">Patrones Geométricos</button>
+    <button onclick="mostrarSubTab(event, 'analisis-archivo')">Análisis de Archivo</button>
+  </div>
+
+  <!-- Búsqueda Simple -->
+  <div id="busqueda-simple" class="subtab activo">
+    <h3>Búsqueda de Patrón Simple</h3>
+    <div class="contenedor-resultado">
+      <textarea id="input-texto" placeholder="Pega tu texto aquí..."></textarea>
+      <button class="visual-vertical" onclick="visualizarVertical('input-texto')">VISUALIZAR</button>
+    </div>
+    <input type="text" id="input-patron" placeholder="Patrón a buscar (ej: 123)">
+    <button onclick="buscarPatronSimple()">Buscar Patrón</button>
+    <button class="boton-generico" onclick="generarGraficaDesdeSimple()">Generar Gráfica</button>
+    <button class="boton-generico" onclick="generarLineaTiempoSimple()">Mostrar en Línea de Tiempo</button>
+    <div id="resultado-simple" class="resultado contenedor-resultado">
+      <button class="visual-vertical" onclick="visualizarVertical('resultado-simple')">VISUALIZAR</button>
+    </div>
+  </div>
+
+  <!-- Patrones Complejos -->
+  <div id="patrones-complejos" class="subtab">
+    <h3>Búsqueda por Rango de Cambios</h3>
+    <div class="contenedor-resultado">
+      <textarea id="input-complejo" placeholder="Ej: 123123123"></textarea>
+      <button class="visual-vertical" onclick="visualizarVertical('input-complejo')">VISUALIZAR</button>
+    </div>
+    
+    <div class="controles-avanzados">
+      <h4>Configuración Avanzada</h4>
+      
+      <div class="grupo-controles">
+        <label>Longitud del patrón:</label>
+        <input type="number" id="longitud-patron" min="1" value="10">
+      </div>
+      
+      <div class="grupo-controles">
+        <label>Interrupciones a buscar (0-13):</label>
+        <input type="text" id="rango-interrupciones" value="0,1,2,3,4,5,6,7,8,9,10,11,12,13" placeholder="Ej: 1,3,5,7">
+      </div>
+      
+      <div class="grupo-controles">
+        <label>Mín. líneas seguidas:</label>
+        <input type="number" id="min-lineas" min="1" max="10" value="1">
+        <label>Máx. líneas seguidas:</label>
+        <input type="number" id="max-lineas" min="1" max="10" value="4">
+      </div>
+    </div>
+    
+    <button onclick="buscarPatronesComplejos()">Buscar Interrupciones</button>
+    <button class="boton-generico" onclick="generarGraficaDesdeComplejos()">Generar Gráfica</button>
+    <button class="boton-generico" onclick="generarLineaTiempoComplejos()">Mostrar en Línea de Tiempo</button>
+    <div id="resultado-complejo" class="resultado contenedor-resultado">
+      <button class="visual-vertical" onclick="visualizarVertical('resultado-complejo')">VISUALIZAR</button>
+    </div>
+    <div id="patrones-encontrados" class="patrones-encontrados contenedor-resultado">
+      <button class="visual-vertical" onclick="visualizarVertical('patrones-encontrados')">VISUALIZAR</button>
+    </div>
+  </div>
+
+  <!-- Patrones Disonantes -->
+  <div id="patrones-disonantes" class="subtab">
+    <h3>Búsqueda de Patrones Disonantes</h3>
+    <div class="contenedor-resultado">
+      <textarea id="input-disonante" placeholder="Pega tu texto aquí..."></textarea>
+      <button class="visual-vertical" onclick="visualizarVertical('input-disonante')">VISUALIZAR</button>
+    </div>
+    
+    <div class="controles-avanzados">
+      <h4>Configuración Avanzada</h4>
+      
+      <div class="grupo-controles">
+        <label>Interrupciones a buscar (0-13):</label>
+        <input type="text" id="rango-interrupciones-disonantes" value="0,1,2,3,4,5,6,7,8,9,10,11,12,13" placeholder="Ej: 2,5,7,9,11">
+      </div>
+      
+      <div class="grupo-controles">
+        <label>Mín. líneas seguidas:</label>
+        <input type="number" id="min-lineas-disonantes" min="1" max="10" value="1">
+        <label>Máx. líneas seguidas:</label>
+        <input type="number" id="max-lineas-disonantes" min="1" max="10" value="4">
+      </div>
+    </div>
+    
+    <button onclick="buscarPatronesDisonantes()">Buscar Patrones Disonantes</button>
+    <button class="boton-generico" onclick="generarGraficaDesdeDisonantes()">Generar Gráfica</button>
+    <button class="boton-generico" onclick="generarLineaTiempoDisonantes()">Mostrar en Línea de Tiempo</button>
+    <div id="resultado-disonante" class="resultado contenedor-resultado">
+      <button class="visual-vertical" onclick="visualizarVertical('resultado-disonante')">VISUALIZAR</button>
+    </div>
+    <div id="resumen-patrones" class="resultado contenedor-resultado">
+      <button class="visual-vertical" onclick="visualizarVertical('resumen-patrones')">VISUALIZAR</button>
+    </div>
+  </div>
+
+  <!-- Patrones Geométricos -->
+  <div id="patrones-geometricos" class="subtab">
+    <h3>Patrones Geométricos 🔺◼🔵</h3>
+    <div class="contenedor-resultado">
+      <textarea id="input-geometrico" placeholder="Ej: ▲▼◄►▲▼"></textarea>
+      <button class="visual-vertical" onclick="visualizarVertical('input-geometrico')">VISUALIZAR</button>
+    </div>
+    <button onclick="analizarGeometricos()">Buscar</button>
+    <button class="boton-generico" onclick="generarGraficaDesdeGeometricos()">Generar Gráfica</button>
+    <div id="resultado-geometrico" class="resultado contenedor-resultado">
+      <button class="visual-vertical" onclick="visualizarVertical('resultado-geometrico')">VISUALIZAR</button>
+    </div>
+  </div>
+  
+  <!-- Análisis de Archivo -->
+  <div id="analisis-archivo" class="subtab">
+    <h3>Análisis Masivo</h3>
+    <div class="contenedor-resultado">
+      <textarea id="input-archivo" placeholder="Pega aquí miles de líneas..."></textarea>
+      <button class="visual-vertical" onclick="visualizarVertical('input-archivo')">VISUALIZAR</button>
+    </div>
+    <input type="text" id="patron-archivo" placeholder="Patrón a buscar (ej: 123)">
+    <button onclick="analizarArchivo()">Analizar Archivo</button>
+    <button class="boton-generico" onclick="generarGraficaDesdeArchivo()">Generar Gráfica</button>
+    <button class="boton-generico" onclick="generarLineaTiempoArchivo()">Mostrar en Línea de Tiempo</button>
+    <button onclick="predecirProximasLineas()">Predecir Próximas 50 Líneas</button>
+    <div id="resultado-archivo" class="resultado contenedor-resultado">
+      <button class="visual-vertical" onclick="visualizarVertical('resultado-archivo')">VISUALIZAR</button>
+    </div>
+    <div id="resultado-prediccion" class="resultado contenedor-resultado">
+      <button class="visual-vertical" onclick="visualizarVertical('resultado-prediccion')">VISUALIZAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- Pestaña Gráfica -->
+<div id="grafica" class="tab">
+  <h2>Visualización Gráfica</h2>
+  <div class="grafica-container">
+    <canvas id="grafica-resultados"></canvas>
+  </div>
+  <div class="resultado">
+    <p>La gráfica se genera desde cualquier pestaña usando el botón "Generar Gráfica".</p>
+  </div>
+</div>
+
+<!-- Nueva pestaña: Línea de Tiempo -->
+<div id="linea-tiempo" class="tab">
+  <h2>Visualización Temporal de Patrones</h2>
+  
+  <div class="config-tiempo">
+    <h3>Configuración del Período</h3>
+    <div class="grupo-controles">
+      <label>Período total a analizar (años):</label>
+      <input type="number" id="total-anios" min="1" value="10">
+    </div>
+    <div class="grupo-controles">
+      <label>Fecha de inicio (día 1):</label>
+      <input type="date" id="fecha-inicio">
+    </div>
+  </div>
+  
+  <div class="grafica-container">
+    <canvas id="grafica-temporal"></canvas>
+  </div>
+  
+  <div class="resultado">
+    <p id="info-temporal">La gráfica mostrará la distribución temporal de los patrones encontrados.</p>
+  </div>
+</div>
+
+<script>
+// Variables globales
+let grafica = null;
+let graficaTemporal = null;
+let patronesPosiciones = [];
+let fechasPatrones = [];
+let tiempoTotal = 10 * 365 * 24 * 60 * 60 * 1000; // 10 años en milisegundos por defecto
+let datosGrafica = {};
+
+// ===== FUNCIONES PARA GENERAR GRÁFICAS DESDE CUALQUIER PESTAÑA =====
+function generarGraficaDesdeSimple() {
+    const texto = document.getElementById('input-texto').value;
+    const patron = document.getElementById('input-patron').value.trim();
+    
+    if (!texto || !patron) {
+        alert('Completa ambos campos para generar la gráfica');
+        return;
+    }
+    
+    patronesPosiciones = obtenerPosiciones(texto, patron);
+    datosGrafica = {
+        tipo: 'simple',
+        posiciones: patronesPosiciones,
+        texto: texto,
+        patron: patron
+    };
+    
+    generarGrafica();
+    mostrarTab('grafica');
+}
+
+function generarGraficaDesdeComplejos() {
+    const input = document.getElementById('input-complejo').value.trim();
+    const interrupciones = document.getElementById('rango-interrupciones').value.split(',').map(Number);
+    
+    if (!input) {
+        alert('Ingresa datos válidos');
+        return;
+    }
+    
+    const lineas = input.split('\n');
+    const posiciones = [];
+    const cambiosPorLinea = [];
+    
+    lineas.forEach((linea, index) => {
+        let cambios = 0;
+        for (let i = 1; i < linea.length; i++) {
+            if (linea[i] !== linea[i - 1]) cambios++;
+        }
+        if (interrupciones.includes(cambios)) {
+            posiciones.push(index);
+            cambiosPorLinea.push(cambios);
+        }
+    });
+    
+    datosGrafica = {
+        tipo: 'complejos',
+        posiciones: posiciones,
+        cambios: cambiosPorLinea,
+        texto: input,
+        interrupciones: interrupciones
+    };
+    
+    generarGrafica();
+    mostrarTab('grafica');
+}
+
+function generarGraficaDesdeDisonantes() {
+    const input = document.getElementById('input-disonante').value;
+    const interrupciones = document.getElementById('rango-interrupciones-disonantes').value.split(',').map(Number);
+    const minLineas = parseInt(document.getElementById('min-lineas-disonantes').value);
+    const maxLineas = parseInt(document.getElementById('max-lineas-disonantes').value);
+    
+    if (!input) {
+        alert('Ingresa datos válidos');
+        return;
+    }
+    
+    // Si no tenemos datos guardados, primero buscamos los patrones
+    if (!datosGrafica || !datosGrafica.ventanas || datosGrafica.ventanas.length === 0) {
+        // Buscamos patrones disonantes (esto guardará los resultados en datosGrafica.ventanas)
+        buscarPatronesDisonantes();
+    }
+    
+    // Verificamos que ahora tengamos datos después de la búsqueda
+    if (!datosGrafica || !datosGrafica.ventanas || datosGrafica.ventanas.length === 0) {
+        alert('No se encontraron patrones disonantes para generar la gráfica');
+        return;
+    }
+    
+    // Preparamos los datos para la gráfica
+    // Aseguramos que tengamos las propiedades correctas en datosGrafica
+    const posiciones = datosGrafica.ventanas.map(v => v.inicio);
+    const cambios = datosGrafica.ventanas.map(v => v.cambios[0] || 0);
+    
+    // Actualizamos datosGrafica con los valores correctos para la generación de gráficas
+    datosGrafica = {
+        tipo: 'disonantes',
+        posiciones: posiciones,
+        cambios: cambios,
+        texto: input,
+        interrupciones: interrupciones,
+        ventanas: datosGrafica.ventanas
+    };
+    
+    // Generamos la gráfica y mostramos la pestaña
+    generarGrafica();
+    mostrarTab('grafica');
+}
+
+function generarGraficaDesdeArchivo() {
+    const input = document.getElementById('input-archivo').value.trim();
+    const patron = document.getElementById('patron-archivo').value.trim();
+    
+    if (!input) {
+        alert('Ingresa datos válidos');
+        return;
+    }
+    
+    if (patron) {
+        patronesPosiciones = obtenerPosiciones(input, patron);
+    } else {
+        patronesPosiciones = [];
+        const lineas = input.split('\n');
+        lineas.forEach((linea, index) => {
+            let cambios = 0;
+            for (let i = 1; i < linea.length; i++) {
+                if (linea[i] !== linea[i-1]) cambios++;
+            }
+            
+            if (cambios > 0) {
+                patronesPosiciones.push(index);
+            }
+        });
+    }
+    
+    datosGrafica = {
+        tipo: 'archivo',
+        posiciones: patronesPosiciones,
+        texto: input,
+        patron: patron
+    };
+    
+    generarGrafica();
+    mostrarTab('grafica');
+}
+
+function generarGrafica() {
+    if (!datosGrafica || !datosGrafica.posiciones || datosGrafica.posiciones.length === 0) {
+        alert('No hay datos suficientes para generar la gráfica');
+        return;
+    }
+
+    if (grafica) {
+        grafica.destroy();
+    }
+
+    const ctx = document.getElementById('grafica-resultados').getContext('2d');
+    let labels = [];
+    let data = [];
+    let title = 'Distribución de ';
+    
+    switch(datosGrafica.tipo) {
+        case 'simple':
+            title += `patrón "${datosGrafica.patron}"`;
+            
+            // Calcular porcentajes temporales entre patrones
+            const totalCaracteresSimple = datosGrafica.texto.length;
+            let porcentajesSimple = [];
+            let diferenciasSimple = [];
+            
+            // Calcular porcentajes y diferencias entre patrones
+            for (let i = 0; i < datosGrafica.posiciones.length; i++) {
+                const pos = datosGrafica.posiciones[i];
+                if (i === 0) {
+                    // Primer patrón, calculamos porcentaje desde el inicio
+                    const porcentaje = (pos / totalCaracteresSimple) * 100;
+                    porcentajesSimple.push(porcentaje.toFixed(2));
+                    diferenciasSimple.push(pos);
+                } else {
+                    // Demás patrones, calculamos diferencia con el anterior
+                    const diff = pos - datosGrafica.posiciones[i-1];
+                    const porcentaje = (diff / totalCaracteresSimple) * 100;
+                    porcentajesSimple.push(porcentaje.toFixed(2));
+                    diferenciasSimple.push(diff);
+                }
+            }
+            
+            // Crear etiquetas informativas sobre posición temporal
+            labels = datosGrafica.posiciones.map((pos, i) => {
+                if (i === 0) {
+                    return `Patrón 1 (pos ${pos}, al ${porcentajesSimple[i]}% del texto)`;
+                } else {
+                    return `Patrón ${i+1} (pos ${pos}, a ${diferenciasSimple[i]} chars, ${porcentajesSimple[i]}%)`;
+                }
+            });
+            
+            // Mantenemos el mismo comportamiento para los datos
+            data = datosGrafica.posiciones.map((pos, i) => {
+                return i === 0 ? pos : pos - datosGrafica.posiciones[i-1];
+            });
+            break;
+            
+        case 'complejos':
+            title += 'patrones complejos';
+            
+            // Calcular porcentajes temporales entre patrones
+            const totalLineasComplejos = datosGrafica.texto.split('\n').length;
+            let porcentajesComplejos = [];
+            let diferenciasComplejos = [];
+            
+            // Calcular porcentajes y diferencias entre patrones
+            for (let i = 0; i < datosGrafica.posiciones.length; i++) {
+                const pos = datosGrafica.posiciones[i];
+                if (i === 0) {
+                    // Primer patrón, calculamos porcentaje desde el inicio
+                    const porcentaje = (pos / totalLineasComplejos) * 100;
+                    porcentajesComplejos.push(porcentaje.toFixed(2));
+                    diferenciasComplejos.push(pos);
+                } else {
+                    // Demás patrones, calculamos diferencia con el anterior
+                    const diff = pos - datosGrafica.posiciones[i-1];
+                    const porcentaje = (diff / totalLineasComplejos) * 100;
+                    porcentajesComplejos.push(porcentaje.toFixed(2));
+                    diferenciasComplejos.push(diff);
+                }
+            }
+            
+            // Crear etiquetas informativas sobre posición temporal
+            labels = datosGrafica.posiciones.map((pos, i) => {
+                const cambios = datosGrafica.cambios[i];
+                if (i === 0) {
+                    return `Patrón 1 (al ${porcentajesComplejos[i]}% del texto, ${cambios} int.)`;
+                } else {
+                    return `Patrón ${i+1} (a ${diferenciasComplejos[i]} líneas, ${porcentajesComplejos[i]}%, ${cambios} int.)`;
+                }
+            });
+            
+            data = datosGrafica.cambios;
+            break;
+            
+        case 'disonantes':
+            title += 'patrones disonantes';
+            
+            // Calcular porcentajes temporales entre patrones
+            const totalLineas = datosGrafica.texto.split('\n').length;
+            let porcentajes = [];
+            let diferencias = [];
+            
+            // Calcular porcentajes y diferencias entre patrones
+            for (let i = 0; i < datosGrafica.posiciones.length; i++) {
+                const pos = datosGrafica.posiciones[i];
+                if (i === 0) {
+                    // Primer patrón, calculamos porcentaje desde el inicio
+                    const porcentaje = (pos / totalLineas) * 100;
+                    porcentajes.push(porcentaje.toFixed(2));
+                    diferencias.push(pos);
+                } else {
+                    // Demás patrones, calculamos diferencia con el anterior
+                    const diff = pos - datosGrafica.posiciones[i-1];
+                    const porcentaje = (diff / totalLineas) * 100;
+                    porcentajes.push(porcentaje.toFixed(2));
+                    diferencias.push(diff);
+                }
+            }
+            
+            // Crear etiquetas informativas sobre posición temporal
+            labels = datosGrafica.posiciones.map((pos, i) => {
+                if (i === 0) {
+                    return `Patrón 1 (al ${porcentajes[i]}% del texto)`;
+                } else {
+                    return `Patrón ${i+1} (a ${diferencias[i]} líneas del anterior, ${porcentajes[i]}%)`;
+                }
+            });
+            
+            // Los datos serán los valores de cambios para cada patrón
+            data = datosGrafica.cambios;
+            break;
+            
+        case 'archivo':
+            title += datosGrafica.patron ? `patrón "${datosGrafica.patron}"` : 'cambios en archivo';
+            
+            // Calcular porcentajes temporales entre patrones
+            const totalLineasArchivo = datosGrafica.texto.split('\n').length;
+            let porcentajesArchivo = [];
+            let diferenciasArchivo = [];
+            
+            // Calcular porcentajes y diferencias entre patrones
+            for (let i = 0; i < datosGrafica.posiciones.length; i++) {
+                const pos = datosGrafica.posiciones[i];
+                if (i === 0) {
+                    // Primer patrón, calculamos porcentaje desde el inicio
+                    const porcentaje = (pos / totalLineasArchivo) * 100;
+                    porcentajesArchivo.push(porcentaje.toFixed(2));
+                    diferenciasArchivo.push(pos);
+                } else {
+                    // Demás patrones, calculamos diferencia con el anterior
+                    const diff = pos - datosGrafica.posiciones[i-1];
+                    const porcentaje = (diff / totalLineasArchivo) * 100;
+                    porcentajesArchivo.push(porcentaje.toFixed(2));
+                    diferenciasArchivo.push(diff);
+                }
+            }
+            
+            // Crear etiquetas informativas sobre posición temporal
+            labels = datosGrafica.posiciones.map((pos, i) => {
+                if (i === 0) {
+                    return `Patrón 1 (línea ${pos+1}, al ${porcentajesArchivo[i]}% del texto)`;
+                } else {
+                    return `Patrón ${i+1} (línea ${pos+1}, a ${diferenciasArchivo[i]} líneas, ${porcentajesArchivo[i]}%)`;
+                }
+            });
+            
+            data = datosGrafica.posiciones.map((pos, i) => i+1);
+            break;
+    }
+
+    grafica = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: title,
+                data: data,
+                borderColor: 'rgba(67, 97, 238, 1)',
+                backgroundColor: 'rgba(67, 97, 238, 0.2)',
+                fill: true,
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.raw}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Posiciones/Líneas'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: datosGrafica.tipo === 'complejos' || datosGrafica.tipo === 'disonantes' ? 
+                              'Número de interrupciones' : 'Posición/Distancia'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ===== FUNCIONES PARA VISUALIZACIÓN TEMPORAL =====
+
+// Función para generar línea de tiempo desde búsqueda simple
+function generarLineaTiempoSimple() {
+    const texto = document.getElementById('input-texto').value;
+    const patron = document.getElementById('input-patron').value.trim();
+    
+    if (!texto || !patron) {
+        alert('Completa ambos campos para generar la visualización temporal');
+        return;
+    }
+    
+    patronesPosiciones = obtenerPosiciones(texto, patron);
+    
+    // Simular fechas basadas en posiciones
+    generarFechasSimuladas(texto, patronesPosiciones);
+    
+    generarGraficaTemporal();
+    mostrarTab('linea-tiempo');
+}
+
+// Función para generar línea de tiempo desde patrones complejos
+function generarLineaTiempoComplejos() {
+    const input = document.getElementById('input-complejo').value.trim();
+    const interrupciones = document.getElementById('rango-interrupciones').value.split(',').map(Number);
+    
+    if (!input) {
+        alert('Ingresa datos válidos');
+        return;
+    }
+    
+    const lineas = input.split('\n');
+    const posiciones = [];
+    
+    lineas.forEach((linea, index) => {
+        let cambios = 0;
+        for (let i = 1; i < linea.length; i++) {
+            if (linea[i] !== linea[i - 1]) cambios++;
+        }
+        if (interrupciones.includes(cambios)) {
+            posiciones.push(index);
+        }
+    });
+    
+    // Simular fechas basadas en posiciones
+    generarFechasSimuladas(input, posiciones);
+    
+    generarGraficaTemporal();
+    mostrarTab('linea-tiempo');
+}
+
+// Función para generar línea de tiempo desde patrones disonantes
+function generarLineaTiempoDisonantes() {
+    const input = document.getElementById('input-disonante').value.trim();
+    
+    if (!input || !datosGrafica.ventanas) {
+        alert('Primero busca patrones disonantes para generar la visualización temporal');
+        return;
+    }
+    
+    const posiciones = datosGrafica.ventanas.map(v => v.inicio);
+    
+    // Simular fechas basadas en posiciones
+    generarFechasSimuladas(input, posiciones);
+    
+    generarGraficaTemporal();
+    mostrarTab('linea-tiempo');
+}
+
+// Función para generar línea de tiempo desde análisis de archivo
+function generarLineaTiempoArchivo() {
+    const input = document.getElementById('input-archivo').value.trim();
+    const patron = document.getElementById('patron-archivo').value.trim();
+    
+    if (!input) {
+        alert('Ingresa datos válidos');
+        return;
+    }
+    
+    let posiciones = [];
+    if (patron) {
+        posiciones = obtenerPosiciones(input, patron);
+    } else {
+        const lineas = input.split('\n');
+        lineas.forEach((linea, index) => {
+            let cambios = 0;
+            for (let i = 1; i < linea.length; i++) {
+                if (linea[i] !== linea[i-1]) cambios++;
+            }
+            
+            if (cambios > 0) {
+                posiciones.push(index);
+            }
+        });
+    }
+    
+    // Simular fechas basadas en posiciones
+    generarFechasSimuladas(input, posiciones);
+    
+    generarGraficaTemporal();
+    mostrarTab('linea-tiempo');
+}
+
+// Genera fechas simuladas basadas en posiciones
+function generarFechasSimuladas(texto, posiciones) {
+    fechasPatrones = [];
+    
+    // Configurar período temporal
+    const totalAnios = parseInt(document.getElementById('total-anios').value) || 10;
+    tiempoTotal = totalAnios * 365 * 24 * 60 * 60 * 1000;
+    const fechaInicio = document.getElementById('fecha-inicio').value 
+                      ? new Date(document.getElementById('fecha-inicio').value)
+                      : new Date(); // Fecha actual por defecto
+    
+    const lineas = texto.split('\n');
+    const tiempoPorLinea = tiempoTotal / lineas.length;
+    
+    posiciones.forEach(pos => {
+        // Para patrones encontrados en el texto
+        if (typeof pos === 'number') {
+            // Determinar en qué línea está esta posición
+            const linea = texto.substring(0, pos).split('\n').length - 1;
+            const fecha = new Date(fechaInicio.getTime() + (linea * tiempoPorLinea));
+            fechasPatrones.push(fecha);
+        }
+    });
+}
+
+// Genera la gráfica temporal
+function generarGraficaTemporal() {
+    if (!fechasPatrones || fechasPatrones.length === 0) {
+        alert('No hay datos suficientes para generar la gráfica temporal');
+        return;
+    }
+
+    // Configurar período temporal
+    const totalAnios = parseInt(document.getElementById('total-anios').value) || 10;
+    tiempoTotal = totalAnios * 365 * 24 * 60 * 60 * 1000;
+    const fechaInicio = document.getElementById('fecha-inicio').value 
+                      ? new Date(document.getElementById('fecha-inicio').value)
+                      : new Date(); // Fecha actual por defecto
+    
+    // Calcular porcentajes temporales entre patrones
+    const porcentajes = [];
+    const intervalosMs = [];
+    const fechas = [];
+    
+    // Ordenar fechas cronológicamente
+    fechasPatrones.sort((a, b) => a - b);
+    
+    // Encontrar el intervalo más grande para calcular porcentajes relativos
+    let maxIntervaloMs = 0;
+    
+    // Primero calculamos todos los intervalos para encontrar el máximo
+    const todosIntervalos = [];
+    for (let i = 0; i < fechasPatrones.length; i++) {
+        if (i === 0) {
+            // Primer patrón - intervalo desde fecha inicio
+            const diff = fechasPatrones[i] - fechaInicio;
+            todosIntervalos.push(diff > 0 ? diff : 0);
+        } else {
+            // Intervalos entre patrones
+            const diff = fechasPatrones[i] - fechasPatrones[i-1];
+            todosIntervalos.push(diff);
+        }
+    }
+    
+    // Encontrar el máximo intervalo
+    maxIntervaloMs = Math.max(...todosIntervalos);
+    
+    // Ahora calculamos los porcentajes relativos al intervalo máximo
+    for (let i = 0; i < fechasPatrones.length; i++) {
+        if (i === 0) {
+            const diff = fechasPatrones[i] - fechaInicio;
+            // Porcentaje relativo al intervalo máximo encontrado
+            const porcentaje = maxIntervaloMs > 0 ? (diff / maxIntervaloMs) * 100 : 0;
+            porcentajes.push(porcentaje > 0 ? porcentaje.toFixed(2) : 0);
+            intervalosMs.push(diff > 0 ? diff : 0);
+        } else {
+            const diff = fechasPatrones[i] - fechasPatrones[i-1];
+            // Porcentaje relativo al intervalo máximo encontrado
+            const porcentaje = (diff / maxIntervaloMs) * 100;
+            porcentajes.push(porcentaje.toFixed(2));
+            intervalosMs.push(diff);
+        }
+        fechas.push(fechasPatrones[i].toLocaleDateString());
+    }
+    
+    // Generar información resumen
+    let infoHTML = `<p><strong>Análisis Temporal (${totalAnios} años):</strong></p>`;
+    infoHTML += `<p>Total patrones: ${fechasPatrones.length}</p>`;
+    
+    if (fechasPatrones.length > 0) {
+        const promedioDias = (intervalosMs.reduce((a,b) => a + b, 0) / intervalosMs.length) / (1000 * 60 * 60 * 24);
+        
+        // Calcular varianza solo si hay más de un intervalo
+        let varianza = 0;
+        if (intervalosMs.length > 1) {
+            varianza = intervalosMs.map(ms => {
+                const dias = ms / (1000 * 60 * 60 * 24);
+                return Math.pow(dias - promedioDias, 2);
+            }).reduce((a,b) => a + b, 0) / intervalosMs.length;
+        }
+        
+        infoHTML += `<p>Intervalo promedio: ${promedioDias.toFixed(2)} días</p>`;
+        infoHTML += `<p>Varianza: ${varianza.toFixed(2)} (${Math.sqrt(varianza).toFixed(2)} días de desviación)</p>`;
+        
+        // Evitar errores si solo hay un intervalo
+        if (intervalosMs.length > 1) {
+            infoHTML += `<p>Patrón más regular: ${(Math.min(...intervalosMs) / (1000 * 60 * 60 * 24)).toFixed(2)} días</p>`;
+            infoHTML += `<p>Patrón menos regular: ${(Math.max(...intervalosMs) / (1000 * 60 * 60 * 24)).toFixed(2)} días</p>`;
+        }
+    }
+    
+    document.getElementById('info-temporal').innerHTML = infoHTML;
+    
+    // Crear gráfica temporal
+    const ctx = document.getElementById('grafica-temporal').getContext('2d');
+    
+    if (graficaTemporal) {
+        graficaTemporal.destroy();
+    }
+    
+    graficaTemporal = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: fechas,
+            datasets: [{
+                label: 'Tiempo entre patrones (% del total)',
+                data: porcentajes,
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Fecha del patrón encontrado'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: '% relativo entre patrones'
+                    },
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const dias = intervalosMs[context.dataIndex] / (1000 * 60 * 60 * 24);
+                            return [
+                                `${context.parsed.y}% (relativo al intervalo máximo)`,
+                                `(${dias.toFixed(2)} días)`
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ===== FUNCIONES AUXILIARES =====
+function obtenerPosiciones(texto, patron) {
+    const posiciones = [];
+    let index = texto.indexOf(patron);
+    while (index !== -1) {
+        posiciones.push(index);
+        index = texto.indexOf(patron, index + 1);
+    }
+    return posiciones;
+}
+
+function mostrarTab(tabId) {
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('activo');
+    });
+    document.getElementById(tabId).classList.add('activo');
+}
+
+function mostrarSubTab(event, subTabId) {
+    document.querySelectorAll('.subtab').forEach(tab => {
+        tab.classList.remove('activo');
+    });
+    document.getElementById(subTabId).classList.add('activo');
+    
+    document.querySelectorAll('.botonera-secundaria button').forEach(btn => {
+        btn.classList.remove('activo');
+    });
+    event.target.classList.add('activo');
+}
+
+function accionBotonFlotante() {
+    alert("Menú rápido activado. Aquí puedes agregar funcionalidades frecuentes.");
+}
+
+// ===== FUNCIONES EXISTENTES =====
+function contarCambios() {
+    const input = document.getElementById('input-contador').value.trim();
+    if (!input) {
+        alert('Ingresa una secuencia de caracteres');
+        return;
+    }
+
+    const lineas = input.split('\n');
+    let resultadoHTML = '<p><strong>Resultado por línea:</strong></p>';
+
+    lineas.forEach((linea, index) => {
+        // Eliminar espacios en blanco solo si se quiere ignorar los espacios
+        // const lineaSinEspacios = linea.replace(/\s+/g, '');
+        // Mantener todos los caracteres incluyendo espacios
+        const lineaAnalizar = linea;
+        
+        let cambios = 0;
+        for (let i = 1; i < lineaAnalizar.length; i++) {
+            // Un cambio ocurre cuando un caracter es diferente al anterior
+            if (lineaAnalizar[i] !== lineaAnalizar[i-1]) cambios++;
+        }
+        
+        // Mostrar información detallada
+        resultadoHTML += `<p>Línea ${index+1}: <strong>${cambios}</strong> cambios | Caracteres: ${lineaAnalizar.length} | Contenido: <span class="contenido-linea">${linea}</span></p>`;
+    });
+
+    // Generar estadísticas
+    const cambiosPorLinea = lineas.map(linea => {
+        // Mantener todos los caracteres
+        const lineaAnalizar = linea;
+        let cambios = 0;
+        for (let i = 1; i < lineaAnalizar.length; i++) {
+            if (lineaAnalizar[i] !== lineaAnalizar[i-1]) cambios++;
+        }
+        return cambios;
+    });
+
+    const total = cambiosPorLinea.reduce((a, b) => a + b, 0);
+    const promedio = total / cambiosPorLinea.length || 0;
+    const minCambios = Math.min(...cambiosPorLinea);
+    const maxCambios = Math.max(...cambiosPorLinea);
+
+    resultadoHTML += `<hr>`;
+    resultadoHTML += `<p><strong>Estadísticas:</strong></p>`;
+    resultadoHTML += `<p>Total de líneas: ${lineas.length}</p>`;
+    resultadoHTML += `<p>Total de cambios: ${total}</p>`;
+    resultadoHTML += `<p>Promedio de cambios: ${promedio.toFixed(2)}</p>`;
+    resultadoHTML += `<p>Línea con menos cambios: ${minCambios}</p>`;
+    resultadoHTML += `<p>Línea con más cambios: ${maxCambios}</p>`;
+
+    document.getElementById('resultado-contador').innerHTML = resultadoHTML;
+}
+
+function buscarPatronSimple() {
+    const texto = document.getElementById('input-texto').value;
+    const patron = document.getElementById('input-patron').value.trim();
+
+    if (!texto || !patron) {
+        alert('Completa ambos campos');
+        return;
+    }
+
+    const regex = new RegExp(patron, 'g');
+    const resultados = texto.match(regex) || [];
+    patronesPosiciones = obtenerPosiciones(texto, patron);
+    
+    document.getElementById('resultado-simple').innerHTML = `
+        <p><strong>Patrón buscado:</strong> "${patron}"</p>
+        <p><strong>Veces encontrado:</strong> ${resultados.length}</p>
+        ${resultados.length > 0 ? `
+        <p><strong>Posiciones:</strong> ${patronesPosiciones.join(', ')}</p>
+        ` : ''}
+    `;
+}
+
+function buscarPatronesComplejos() {
+    const input = document.getElementById('input-complejo').value;
+    const longitud = parseInt(document.getElementById('longitud-patron').value);
+    const interrupciones = document.getElementById('rango-interrupciones').value.split(',').map(Number);
+    const minLineas = parseInt(document.getElementById('min-lineas').value);
+    const maxLineas = parseInt(document.getElementById('max-lineas').value);
+
+    if (!input || !interrupciones.length || isNaN(minLineas) || isNaN(maxLineas)) {
+        alert('Ingresa datos válidos');
+        return;
+    }
+
+    const lineas = input.split('\n');
+    const totalLineas = lineas.length;
+    
+    let interrupcionesPorLinea = [];
+    let patronesEncontrados = {};
+    
+    interrupciones.forEach(interrupcion => {
+        patronesEncontrados[interrupcion] = 0;
+    });
+    
+    lineas.forEach((linea, index) => {
+        // Mantener todos los caracteres incluyendo espacios y símbolos
+        const lineaAnalizar = linea;
+        let cambios = 0;
+        
+        for (let i = 1; i < lineaAnalizar.length; i++) {
+            // Un cambio ocurre cuando un caracter es diferente al anterior
+            if (lineaAnalizar[i] !== lineaAnalizar[i-1]) cambios++;
+        }
+        
+        interrupcionesPorLinea.push(cambios);
+        
+        if (interrupciones.includes(cambios)) {
+            patronesEncontrados[cambios]++;
+        }
+    });
+    
+    let resultadoHTML = '<p><strong>Interrupciones por línea:</strong></p>';
+    let interrupcionesMostradas = 0;
+    
+    for (let i = 0; i < totalLineas && interrupcionesMostradas < 20; i++) {
+        if (interrupciones.includes(interrupcionesPorLinea[i])) {
+            resultadoHTML += `<p>Línea ${i+1}: <strong>${interrupcionesPorLinea[i]}</strong> interrupciones</p>`;
+            interrupcionesMostradas++;
+        }
+    }
+    
+    resultadoHTML += interrupcionesMostradas >= 20 ? `<p>(Mostrando solo las primeras 20 líneas)</p>` : '';
+    
+    // Buscar secuencias consecutivas de patrones
+    let secuenciasEncontradas = 0;
+    let secuenciasHTML = '<p><strong>Secuencias encontradas:</strong></p>';
+    
+    for (let i = 0; i < totalLineas;) {
+        let secuenciaValida = true;
+        let cambiosEnSecuencia = [];
+        
+        for (let j = 0; j < maxLineas; j++) {
+            if (i + j >= lineas.length) break;
+            
+            const linea = lineas[i + j];
+            let cambios = 0;
+            for (let k = 1; k < linea.length; k++) {
+                if (linea[k] !== linea[k - 1]) cambios++;
+            }
+            
+            if (!interrupciones.includes(cambios)) {
+                secuenciaValida = false;
+                break;
+            }
+            
+            cambiosEnSecuencia.push(cambios);
+        }
+        
+        if (secuenciaValida && cambiosEnSecuencia.length >= minLineas) {
+            secuenciasHTML += `<p>Secuencia ${secuenciasEncontradas + 1}: Líneas ${i + 1}-${i + cambiosEnSecuencia.length} (${cambiosEnSecuencia.join(', ')})</p>`;
+            secuenciasEncontradas++;
+            i += maxLineas;
+        } else {
+            i++;
+        }
+    }
+
+    let patronesHTML = '<p><strong>Patrones encontrados:</strong></p>';
+    for (const [patron, count] of Object.entries(patronesEncontrados)) {
+        const porcentaje = ((count / totalLineas) * 100).toFixed(2);
+        patronesHTML += `<p>Patrón de ${patron} interrupciones: ${count} veces (${porcentaje}%)</p>`;
+    }
+
+    document.getElementById('resultado-complejo').innerHTML = resultadoHTML;
+    document.getElementById('patrones-encontrados').innerHTML = patronesHTML + secuenciasHTML;
+}
+
+function buscarPatronesDisonantes() {
+    const input = document.getElementById('input-disonante').value;
+    const interrupciones = document.getElementById('rango-interrupciones-disonantes').value.split(',').map(Number);
+    const minLineas = parseInt(document.getElementById('min-lineas-disonantes').value);
+    const maxLineas = parseInt(document.getElementById('max-lineas-disonantes').value);
+
+    if (!input || !interrupciones.length || isNaN(minLineas) || isNaN(maxLineas)) {
+        alert('Ingresa datos válidos');
+        return;
+    }
+
+    const lineas = input.split('\n');
+    let resultadoHTML = '<p><strong>Patrones disonantes:</strong></p>';
+    let resumenPatrones = '<p><strong>Resumen de patrones:</strong></p>';
+    const ventanasEncontradas = [];
+
+    for (let i = 0; i <= lineas.length - maxLineas;) {
+        let ventanaValida = true;
+        let cambiosEnVentana = [];
+        
+        for (let j = 0; j < maxLineas; j++) {
+            if (i + j >= lineas.length) break;
+            
+            // Mantener todos los caracteres incluyendo espacios y símbolos
+            const linea = lineas[i + j];
+            let cambios = 0;
+            
+            for (let k = 1; k < linea.length; k++) {
+                // Un cambio ocurre cuando un caracter es diferente al anterior
+                if (linea[k] !== linea[k - 1]) cambios++;
+            }
+            
+            if (!interrupciones.includes(cambios)) {
+                ventanaValida = false;
+                break;
+            }
+            
+            cambiosEnVentana.push(cambios);
+        }
+        
+        if (ventanaValida && cambiosEnVentana.length >= minLineas) {
+            ventanasEncontradas.push({
+                inicio: i,
+                fin: i + cambiosEnVentana.length - 1,
+                cambios: cambiosEnVentana
+            });
+            
+            i += maxLineas;
+        } else {
+            i++;
+        }
+    }
+
+    ventanasEncontradas.forEach((ventana, index) => {
+        resultadoHTML += `<p>Ventana ${index + 1}: Líneas ${ventana.inicio + 1}-${ventana.fin + 1} (${ventana.cambios.join(', ')})</p>`;
+    });
+
+    const totalVentanas = ventanasEncontradas.length;
+    const porcentajeVentanas = ((totalVentanas / (lineas.length / maxLineas)) * 100).toFixed(2);
+    
+    resumenPatrones += `<p>Total de ventanas encontradas: ${totalVentanas}</p>`;
+    resumenPatrones += `<p>Porcentaje de ventanas encontradas: ${porcentajeVentanas}%</p>`;
+    resumenPatrones += `<p>Interrupciones buscadas: ${interrupciones.join(', ')}</p>`;
+    resumenPatrones += `<p>Rango de líneas seguidas: ${minLineas}-${maxLineas}</p>`;
+
+    document.getElementById('resultado-disonante').innerHTML = resultadoHTML;
+    document.getElementById('resumen-patrones').innerHTML = resumenPatrones;
+    
+    // Guardar la información para la gráfica temporal
+    datosGrafica.ventanas = ventanasEncontradas;
+}
+
+function analizarArchivo() {
+    const input = document.getElementById('input-archivo').value;
+    const patron = document.getElementById('patron-archivo').value.trim();
+    
+    if (!input) {
+        alert('Ingresa datos válidos');
+        return;
+    }
+    
+    const lineas = input.split('\n');
+    const totalLineas = lineas.length;
+    
+    let resultadoHTML = `<p><strong>Análisis de archivo con ${totalLineas} líneas:</strong></p>`;
+    
+    if (patron) {
+        // Buscar el patrón específico, escapando caracteres especiales
+        const escapedPattern = patron.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(escapedPattern, 'g');
+        let totalPatrones = 0;
+        let lineasConPatron = 0;
+        
+        lineas.forEach((linea, index) => {
+            const matches = linea.match(regex) || [];
+            if (matches.length > 0) {
+                totalPatrones += matches.length;
+                lineasConPatron++;
+            }
+        });
+        
+        resultadoHTML += `<p>Patrón buscado: "${patron}"</p>`;
+        resultadoHTML += `<p>Total de ocurrencias: ${totalPatrones}</p>`;
+        resultadoHTML += `<p>Líneas con el patrón: ${lineasConPatron} (${((lineasConPatron/totalLineas)*100).toFixed(2)}%)</p>`;
+    } else {
+        // Análisis general procesando cada caracter incluidos letras, números, símbolos y espacios
+        let totalCambios = 0;
+        let minCambios = Infinity;
+        let maxCambios = 0;
+        
+        lineas.forEach((linea, index) => {
+            // Mantener todos los caracteres incluyendo espacios y símbolos
+            const lineaAnalizar = linea;
+            let cambios = 0;
+            
+            for (let i = 1; i < lineaAnalizar.length; i++) {
+                // Un cambio ocurre cuando un caracter es diferente al anterior
+                if (lineaAnalizar[i] !== lineaAnalizar[i-1]) cambios++;
+            }
+            
+            totalCambios += cambios;
+            minCambios = Math.min(minCambios, cambios);
+            maxCambios = Math.max(maxCambios, cambios);
+        });
+        
+        const promedioCambios = totalCambios / totalLineas;
+        
+        resultadoHTML += `<p>Total de cambios: ${totalCambios}</p>`;
+        resultadoHTML += `<p>Promedio de cambios por línea: ${promedioCambios.toFixed(2)}</p>`;
+        resultadoHTML += `<p>Mínimo de cambios en una línea: ${minCambios === Infinity ? 0 : minCambios}</p>`;
+        resultadoHTML += `<p>Máximo de cambios en una línea: ${maxCambios}</p>`;
+    }
+    
+    document.getElementById('resultado-archivo').innerHTML = resultadoHTML;
+}
+
+// Función para analizar patrones geométricos
+function analizarGeometricos() {
+    const formas = ['▲', '▼', '◄', '►', '●', '■', '△', '▽', '◁', '▷', '○', '□', '🔺', '◼', '🔵'];
+    // Obtener el texto tal como está, manteniendo espacios y todos los caracteres
+    const texto = document.getElementById('input-geometrico').value;
+    let resultado = {};
+    
+    // Contar todas las formas, incluso si están mezcladas con otros caracteres
+    formas.forEach(f => {
+        // Escapa caracteres especiales en expresiones regulares
+        const escapedForm = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        resultado[f] = (texto.match(new RegExp(escapedForm, 'g')) || []).length;
+    });
+    
+    let resultadoHTML = '<h3>Análisis de Patrones Geométricos</h3>';
+    resultadoHTML += '<div class="tabla-geometricos">';
+    
+    // Filtrar solo las formas encontradas
+    const formasEncontradas = Object.entries(resultado).filter(([_, count]) => count > 0);
+    
+    if (formasEncontradas.length === 0) {
+        resultadoHTML += '<p>No se encontraron símbolos geométricos. Prueba con: ▲ ▼ ◄ ► ● ■ △ ▽ ◁ ▷ ○ □</p>';
+    } else {
+        // Crear una tabla visual para las formas
+        resultadoHTML += '<table class="tabla-resultados">';
+        resultadoHTML += '<tr><th>Forma</th><th>Cantidad</th><th>Representación</th></tr>';
+        
+        formasEncontradas.forEach(([forma, count]) => {
+            const porcentaje = Math.round((count / texto.length) * 100);
+            resultadoHTML += `<tr>
+                <td class="celda-forma">${forma}</td>
+                <td class="celda-cantidad">${count}</td>
+                <td class="celda-visual">
+                    <div class="barra-visual" style="width: ${Math.min(porcentaje * 3, 100)}%"></div>
+                </td>
+            </tr>`;
+        });
+        
+        resultadoHTML += '</table>';
+        
+        // Estadísticas adicionales
+        const totalFormas = formasEncontradas.reduce((acc, [_, count]) => acc + count, 0);
+        resultadoHTML += `<p>Total de símbolos: ${totalFormas}</p>`;
+        resultadoHTML += `<p>Densidad: ${Math.round((totalFormas / texto.length) * 100)}% del texto</p>`;
+    }
+    
+    resultadoHTML += '</div>';
+    
+    document.getElementById('resultado-geometrico').innerHTML = resultadoHTML;
+}
+
+// Función para generar gráfica de patrones geométricos
+function generarGraficaDesdeGeometricos() {
+    const texto = document.getElementById('input-geometrico').value;
+    
+    if (!texto) {
+        alert('Ingresa datos válidos');
+        return;
+    }
+    
+    const formas = ['▲', '▼', '◄', '►', '●', '■', '△', '▽', '◁', '▷', '○', '□', '🔺', '◼', '🔵'];
+    let datosFormas = {};
+    
+    formas.forEach(f => {
+        // Escapa caracteres especiales en expresiones regulares para evitar problemas
+        const escapedForm = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const count = (texto.match(new RegExp(escapedForm, 'g')) || []).length;
+        if (count > 0) {
+            datosFormas[f] = count;
+        }
+    });
+    
+    if (Object.keys(datosFormas).length === 0) {
+        alert('No se encontraron símbolos geométricos en el texto');
+        return;
+    }
+    
+    datosGrafica = {
+        tipo: 'geometricos',
+        formas: Object.keys(datosFormas),
+        cantidades: Object.values(datosFormas)
+    };
+    
+    // Generar gráfica de barras para formas geométricas
+    if (grafica) {
+        grafica.destroy();
+    }
+    
+    const ctx = document.getElementById('grafica-resultados').getContext('2d');
+    
+    grafica = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: datosGrafica.formas,
+            datasets: [{
+                label: 'Distribución de Formas Geométricas',
+                data: datosGrafica.cantidades,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.5)',
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(255, 206, 86, 0.5)',
+                    'rgba(75, 192, 192, 0.5)',
+                    'rgba(153, 102, 255, 0.5)',
+                    'rgba(255, 159, 64, 0.5)',
+                    'rgba(199, 199, 199, 0.5)',
+                    'rgba(83, 102, 255, 0.5)',
+                    'rgba(40, 159, 64, 0.5)',
+                    'rgba(210, 199, 199, 0.5)',
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)',
+                    'rgba(199, 199, 199, 1)',
+                    'rgba(83, 102, 255, 1)',
+                    'rgba(40, 159, 64, 1)',
+                    'rgba(210, 199, 199, 1)',
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Cantidad'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Formas Geométricas'
+                    }
+                }
+            }
+        }
+    });
+    
+    mostrarTab('grafica');
+}
+
+function predecirProximasLineas() {
+    const input = document.getElementById('input-archivo').value;
+    
+    if (!input) {
+        alert('Ingresa datos válidos para predecir');
+        return;
+    }
+    
+    const lineas = input.split('\n');
+    if (lineas.length < 50) {
+        alert('Se necesitan al menos 50 líneas para hacer predicciones');
+        return;
+    }
+    
+    // Análisis de frecuencia de caracteres
+    const frecuencias = {};
+    lineas.forEach(linea => {
+        for (let i = 0; i < linea.length; i++) {
+            const char = linea[i];
+            frecuencias[char] = (frecuencias[char] || 0) + 1;
+        }
+    });
+    
+    // Ordenar caracteres por frecuencia
+    const caracteresOrdenados = Object.keys(frecuencias).sort((a, b) => frecuencias[b] - frecuencias[a]);
+    
+    // Calcular longitudes promedio
+    const longitudPromedio = Math.round(lineas.reduce((acc, curr) => acc + curr.length, 0) / lineas.length);
+    
+    // Generar próximas 50 líneas basadas en patrones y frecuencias
+    let lineasPredichas = [];
+    
+    for (let i = 0; i < 50; i++) {
+        let nuevaLinea = '';
+        const longitudLinea = longitudPromedio + Math.floor(Math.random() * 5) - 2; // variación de ±2
+        
+        // Obtener patrones recientes (últimas 5 líneas)
+        const ultimasLineas = i < 5 ? 
+            lineas.slice(lineas.length - 5) : 
+            [...lineas.slice(lineas.length - 5), ...lineasPredichas.slice(lineasPredichas.length - 5)].slice(-5);
+        
+        // Determinar caracteres con mayor probabilidad
+        const ultimosCaracteres = ultimasLineas.join('');
+        const frecLocales = {};
+        for (let c of ultimosCaracteres) {
+            frecLocales[c] = (frecLocales[c] || 0) + 1;
+        }
+        
+        // Combinar frecuencias globales y locales
+        for (let j = 0; j < longitudLinea; j++) {
+            // 70% basado en frecuencias recientes, 30% en frecuencias globales
+            const usarReciente = Math.random() < 0.7;
+            
+            if (usarReciente && Object.keys(frecLocales).length > 0) {
+                const caractLocales = Object.keys(frecLocales).sort((a, b) => frecLocales[b] - frecLocales[a]);
+                // Elegir entre los 3 más frecuentes con preferencia a los más comunes
+                const indice = Math.floor(Math.random() * Math.min(3, caractLocales.length));
+                nuevaLinea += caractLocales[indice];
+            } else {
+                // Elegir entre los 5 más frecuentes globalmente
+                const indice = Math.floor(Math.random() * Math.min(5, caracteresOrdenados.length));
+                nuevaLinea += caracteresOrdenados[indice];
+            }
+        }
+        
+        lineasPredichas.push(nuevaLinea);
+    }
+    
+    let resultadoHTML = '<h3>Predicción de Próximas 50 Líneas</h3>';
+    resultadoHTML += '<div class="info-prediccion">';
+    resultadoHTML += `<p>Longitud promedio: ${longitudPromedio} caracteres</p>`;
+    resultadoHTML += `<p>Caracteres más frecuentes: ${caracteresOrdenados.slice(0, 5).join(', ')}</p>`;
+    resultadoHTML += '</div>';
+    resultadoHTML += '<div class="lista-prediccion">';
+    
+    lineasPredichas.forEach((linea, i) => {
+        resultadoHTML += `<div class="linea-prediccion">${i+1}: ${linea}</div>`;
+    });
+    
+    resultadoHTML += '</div>';
+    
+    document.getElementById('resultado-prediccion').innerHTML = resultadoHTML;
+}
+
+function autoguardar() {
+    alert('Función de autoguardado simulada. En una aplicación real, esto guardaría el estado actual en el navegador o en la nube.');
+}
+
+// Función para visualizar elementos en formato vertical (nuevo)
+function visualizarVertical(elementId) {
+    const elemento = document.getElementById(elementId);
+    const contenido = elemento.tagName === 'TEXTAREA' ? elemento.value : elemento.innerHTML;
+    
+    // Crear una ventana emergente para mostrar el contenido verticalmente
+    const ventana = window.open('', '_blank', 'width=600,height=800,scrollbars=yes');
+    ventana.document.write(`
+        <html>
+        <head>
+            <title>Visualización Vertical</title>
+            <style>
+                body {
+                    background-color: #f0f0f0;
+                    padding: 20px;
+                    font-family: Arial, sans-serif;
+                }
+                .contenedor-vertical {
+                    writing-mode: vertical-rl;
+                    text-orientation: mixed;
+                    height: 90vh;
+                    overflow-x: auto;
+                    white-space: pre;
+                    padding: 20px;
+                    background: white;
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    font-family: monospace;
+                    line-height: 1.5;
+                }
+                h2 {
+                    color: #4361ee;
+                }
+            </style>
+        </head>
+        <body>
+            <h2>Visualización Vertical del Contenido</h2>
+            <div class="contenedor-vertical">${contenido}</div>
+        </body>
+        </html>
+    `);
+    ventana.document.close();
+}
+
+// Inicializar fecha por defecto (hoy)
+document.addEventListener('DOMContentLoaded', function() {
+    const hoy = new Date();
+    const fechaFormateada = hoy.toISOString().split('T')[0];
+    document.getElementById('fecha-inicio').value = fechaFormateada;
+    
+    // Mostrar la pestaña de patrones por defecto
+    mostrarTab('patrones');
+});
+</script>
+</body>
+</html>
